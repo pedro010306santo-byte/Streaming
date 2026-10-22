@@ -20,12 +20,12 @@ services:
       DB_PORT: "3306"
       DB_DATABASE: streaming
       DB_USERNAME: streaming
-      DB_PASSWORD: "${DB_PASSWORD:-streaming_secret}"
+      DB_PASSWORD: "${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env da EC2}"
       SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
       FILESYSTEM_DISK: public
-      RUN_SEEDER: "true"
+      RUN_SEEDER: "${RUN_SEEDER:-false}"
     volumes:
       - app_storage:/var/www/html/storage
     depends_on:
@@ -38,8 +38,8 @@ services:
     environment:
       MYSQL_DATABASE: streaming
       MYSQL_USER: streaming
-      MYSQL_PASSWORD: "${DB_PASSWORD:-streaming_secret}"
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-streaming_root_secret}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env da EC2}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD no arquivo .env da EC2}"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
