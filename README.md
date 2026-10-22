@@ -46,7 +46,7 @@ php artisan serve
 
 Se preferir usar um MySQL local, altere `DB_PORT`, `DB_USERNAME` e `DB_PASSWORD` no `.env`.
 
-## Deploy no AWS Learner Lab (EC2)
+## Deploy no AWS Learner Lab (EC2) com GitHub Actions
 
 O arquivo `docker-compose.prod.yml` publica a aplicacao na porta 80 e mantem o
 MySQL e os uploads em volumes persistentes.
@@ -66,10 +66,41 @@ sudo docker compose version
 Depois clone o repositorio e suba a aplicacao:
 
 ```bash
-git clone https://github.com/Vinicius-Brunoo/Streaming.git
+git clone https://github.com/pedro010306santo-byte/Streaming.git
 cd Streaming
+cat > .env <<'EOF'
+APP_URL=http://IP_PUBLICO_DA_EC2
+DB_PASSWORD=COLOQUE_UMA_SENHA_FORTE_AQUI
+MYSQL_ROOT_PASSWORD=COLOQUE_OUTRA_SENHA_FORTE_AQUI
+RUN_SEEDER=false
+EOF
 sudo docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+Troque o IP e as duas senhas antes de executar o Compose. O arquivo `.env` fica
+somente na EC2 e nao deve ser enviado ao GitHub. Para carregar os dados de
+demonstracao uma unica vez, execute:
+
+```bash
+sudo docker compose -f docker-compose.prod.yml exec app php artisan db:seed --force
+```
+
+### Configurar o GitHub Actions
+
+No repositorio, abra **Settings > Secrets and variables > Actions** e crie estes
+repository secrets:
+
+- `EC2_HOST`: IP publico ou DNS publico da instancia.
+- `EC2_USER`: `ec2-user` no Amazon Linux 2023.
+- `EC2_SSH_KEY`: conteudo completo da chave privada `.pem` da instancia.
+
+O Security Group precisa aceitar TCP 22 (SSH) a partir dos runners do GitHub
+durante o deploy e TCP 80 (HTTP) para os usuarios. A porta 3306 nao deve ser
+publicada.
+
+O workflow `.github/workflows/deploy-aws.yml` executa automaticamente a cada
+push na branch `main`. Tambem e possivel inicia-lo manualmente pela aba
+**Actions > Deploy na AWS EC2 > Run workflow**.
 
 Acesse `http://IP_PUBLICO_DA_EC2`. O Security Group da instancia precisa liberar
 TCP 80 (HTTP). Nao libere a porta 3306: o MySQL fica acessivel somente pela rede
@@ -89,11 +120,10 @@ git pull
 sudo docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-As senhas padrao do banco servem apenas para o laboratorio. Para troca-las,
-defina `DB_PASSWORD` e `MYSQL_ROOT_PASSWORD` em um arquivo `.env` na EC2 antes de
-subir os containers.
+As senhas do banco sao obrigatorias no arquivo `.env` da EC2. O deploy falha de
+forma segura se elas nao estiverem configuradas.
 
-## Usuario de teste
+## Usuario de teste (somente ao executar o seeder)
 
 O seeder cria um usuario administrador:
 
